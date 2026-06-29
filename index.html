@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="google-site-verification" content="gPNeycwiMzgXqM19_KS172Ioaes7swEU5sYd5agkmXs" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IHSAS Union Portal - Login</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -10,6 +11,7 @@
 
     <div class="w-full max-w-md bg-slate-900/80 backdrop-blur-md p-8 rounded-2xl shadow-2xl border border-slate-800 relative overflow-hidden">
         
+        <!-- Top College Union Badge -->
         <div class="absolute top-0 right-0 bg-gradient-to-l from-teal-500 to-emerald-600 text-slate-950 text-[10px] font-black px-4 py-1 rounded-bl-xl tracking-widest shadow">
             IHSAS UNION
         </div>
@@ -58,7 +60,6 @@
             const user = document.getElementById('username').value;
             const pass = document.getElementById('password').value.trim();
 
-            // പാസ്‌വേഡ് ചെക്കിങ് സിസ്റ്റം - അഡ്മിന് Admin, മറ്റുള്ളവർക്ക് IHSAS
             if (user === 'Admin' && pass.toLowerCase() === 'admin') {
                 localStorage.setItem('loggedInUser', user);
                 window.location.href = 'admin.html';
