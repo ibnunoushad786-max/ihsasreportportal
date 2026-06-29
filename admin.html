@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IHSAS - Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            body { background: white !important; color: black !important; }
+            nav, .no-print { display: none !important; }
+            .print-layout { grid-template-columns: 1fr !important; }
+            .card-print { border: 1px solid #ccc !important; color: black !important; background: white !important; }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 min-h-screen font-sans text-slate-100">
+
+    <nav class="bg-slate-950 text-white p-4 shadow-xl flex justify-between items-center px-6 md:px-12 border-b border-slate-800">
+        <div class="flex items-center gap-3">
+            <span class="bg-gradient-to-r from-teal-500 to-emerald-600 text-slate-950 font-black text-xs px-2.5 py-1 rounded-md tracking-wider">IHSAS</span>
+            <h1 class="text-xl font-bold tracking-wide">Union Admin Panel 👑</h1>
+        </div>
+        <button onclick="logout()" class="bg-rose-600 hover:bg-rose-700 px-4 py-2 rounded-lg font-semibold text-sm transition">Logout</button>
+    </nav>
+
+    <main class="max-w-6xl mx-auto mt-10 p-6">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 no-print">
+            <h2 class="text-3xl font-extrabold text-slate-100">Submitted Class Reports</h2>
+            <div class="flex flex-wrap gap-2">
+                <button onclick="window.print()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow">🖨️ Print Summary</button>
+                <button onclick="clearAll()" class="bg-rose-600/30 hover:bg-rose-600/50 text-rose-400 text-xs font-bold px-4 py-2.5 rounded-xl transition border border-rose-500/30">Clear All Data</button>
+            </div>
+        </div>
+
+        <div class="bg-slate-900 p-4 rounded-2xl shadow-lg border border-slate-800 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between no-print">
+            <div class="w-full md:w-1/3">
+                <input type="text" id="searchBar" oninput="renderReports()" placeholder="🔍 Search..." 
+                    class="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500">
+            </div>
+            
+            <div class="w-full md:w-2/3 flex flex-wrap gap-1.5 justify-end">
+                <button onclick="filterClass('All')" class="filter-btn bg-teal-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg">All</button>
+                <button onclick="filterClass('Marjan')" class="filter-btn bg-slate-950 text-slate-400 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-800">Marjan</button>
+                <button onclick="filterClass('Wahda')" class="filter-btn bg-slate-950 text-slate-400 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-800">Wahda</button>
+                <button onclick="filterClass('Suhba')" class="filter-btn bg-slate-950 text-slate-400 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-800">Suhba</button>
+                <button onclick="filterClass('Hira')" class="filter-btn bg-slate-950 text-slate-400 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-800">Hira</button>
+                <button onclick="filterClass('Safe')" class="filter-btn bg-slate-950 text-slate-400 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-800">Safe</button>
+                <button onclick="filterClass('Isra')" class="filter-btn bg-slate-950 text-slate-400 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-800">Isra</button>
+                <button onclick="filterClass('Chirag')" class="filter-btn bg-slate-950 text-slate-400 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-800">Chirag</button>
+                <button onclick="filterClass('Swafwa')" class="filter-btn bg-slate-950 text-slate-400 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-800">Swafwa</button>
+                <button onclick="filterClass('Alif')" class="filter-btn bg-slate-950 text-slate-400 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-800">Alif</button>
+                <button onclick="filterClass('Parwaz')" class="filter-btn bg-slate-950 text-slate-400 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-800">Parwaz</button>
+            </div>
+        </div>
+
+        <div id="noReports" class="hidden bg-slate-900 p-12 rounded-2xl text-center text-slate-500 border border-slate-800">
+            📭 No reports match your criteria.
+        </div>
+
+        <div id="reportsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-6 print-layout"></div>
+    </main>
+
+    <script>
+        if (localStorage.getItem('loggedInUser') !== 'Admin') {
+            window.location.href = 'index.html';
+        }
+
+        let currentFilter = 'All';
+        const container = document.getElementById('reportsContainer');
+        const noReportsDiv = document.getElementById('noReports');
+
+        function updateStatus(reportId, newStatus) {
+            let reports = JSON.parse(localStorage.getItem('allReports')) || [];
+            reports = reports.map(r => {
+                if (String(r.id) === String(reportId)) {
+                    return { ...r, status: newStatus };
+                }
+                return r;
+            });
+            localStorage.setItem('allReports', JSON.stringify(reports));
+            renderReports();
+        }
+
+        function filterClass(className) {
+            currentFilter = className;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.className = "filter-btn bg-slate-950 text-slate-400 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-800";
+            });
+            event.target.className = "filter-btn bg-teal-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition shadow";
+            renderReports();
+        }
+
+        function renderReports() {
+            container.innerHTML = '';
+            const query = document.getElementById('searchBar').value.toLowerCase();
+            const reports = JSON.parse(localStorage.getItem('allReports')) || [];
+
+            const filtered = reports.filter(r => {
+                const matchesClass = currentFilter === 'All' || r.className === currentFilter;
+                const matchesSearch = r.className.toLowerCase().includes(query) || 
+                                      (r.unionReport && r.unionReport.toLowerCase().includes(query));
+                return matchesClass && matchesSearch;
+            });
+
+            if (filtered.length === 0) {
+                noReportsDiv.classList.remove('hidden');
+                return;
+            }
+            noReportsDiv.classList.add('hidden');
+
+            filtered.forEach(report => {
+                const card = document.createElement('div');
+                let borderCol = 'border-teal-500/40';
+                if (report.status === 'Approved') borderCol = 'border-emerald-500';
+                if (report.status === 'Rejected') borderCol = 'border-rose-500';
+
+                card.className = `bg-slate-900 p-6 rounded-2xl shadow-xl border-t-4 ${borderCol} space-y-4 flex flex-col justify-between border border-slate-850 card-print`;
+                
+                let imgHTML = report.imageData ? `<div class="mt-2"><img src="${report.imageData}" class="rounded-xl max-h-48 w-full object-cover border border-slate-800"></div>` : '';
+                let docHTML = report.docData ? `<div class="text-xs text-slate-400 flex justify-between items-center bg-slate-950 p-2.5 rounded-xl border border-slate-800 mt-2"><span class="font-medium truncate max-w-[150px]">📄 ${report.docName}</span><a href="${report.docData}" download="${report.docName}" class="bg-teal-600 text-white font-bold px-3 py-1.5 rounded-lg text-[10px] no-print">Download</a></div>` : `<div class="text-xs text-slate-500">Document: No PDF</div>`;
+                
+                card.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                            <div>
+                                <span class="font-bold text-lg text-teal-400">${report.className}</span>
+                                <span class="ml-2 text-xs px-2 py-0.5 rounded-full font-bold ${report.status === 'Approved' ? 'bg-emerald-950 text-emerald-400' : report.status === 'Rejected' ? 'bg-rose-950 text-rose-400' : 'bg-amber-950 text-amber-400'}">${report.status || 'Pending'}</span>
+                            </div>
+                            <span class="text-xs text-slate-500 font-medium">${report.time}</span>
+                        </div>
+                        
+                        <!-- 3 സെക്ഷനുകളും ഇവിടെ പ്രത്യേകം കാണിക്കുന്നു -->
+                        <div class="space-y-2 text-sm text-slate-300">
+                            <div>
+                                <span class="text-xs font-bold text-teal-500 block uppercase tracking-wider">Union's Report:</span>
+                                <p class="bg-slate-950/50 p-3 rounded-xl border border-slate-800/60 mt-1 whitespace-pre-line">${report.unionReport || 'N/A'}</p>
+                            </div>
+                            <div>
+                                <span class="text-xs font-bold text-emerald-500 block uppercase tracking-wider">Outreach Programmes:</span>
+                                <p class="bg-slate-950/50 p-3 rounded-xl border border-slate-800/60 mt-1 whitespace-pre-line">${report.outreach || 'N/A'}</p>
+                            </div>
+                            <div>
+                                <span class="text-xs font-bold text-indigo-400 block uppercase tracking-wider">Achievements Of Union:</span>
+                                <p class="bg-slate-950/50 p-3 rounded-xl border border-slate-800/60 mt-1 whitespace-pre-line">${report.achievements || 'N/A'}</p>
+                            </div>
+                        </div>
+
+                        ${imgHTML}
+                    </div>
+                    <div class="pt-2 mt-auto">
+                        ${docHTML}
+                        <div class="flex gap-2 mt-4 no-print border-t border-slate-800 pt-3">
+                            <button onclick="updateStatus('${report.id}', 'Approved')" class="flex-1 bg-emerald-600 text-white text-xs font-bold py-1.5 rounded-lg">Approve</button>
+                            <button onclick="updateStatus('${report.id}', 'Rejected')" class="flex-1 bg-rose-600 text-white text-xs font-bold py-1.5 rounded-lg">Reject</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function clearAll() {
+            if(confirm("Permanently erase everything?")) {
+                localStorage.removeItem('allReports');
+                renderReports();
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('loggedInUser');
+            window.location.href = 'index.html';
+        }
+
+        renderReports();
+    </script>
+</body>
+</html>
